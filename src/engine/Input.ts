@@ -43,13 +43,15 @@ export class Input {
         this.startX = x;
         this.startY = y;
         this.isPressed = true;
+
+        // カーソル位置の即時更新
+        this.updateCursor(x, y);
     }
 
-    private handleMove(x: number, _y: number) {
+    private handleMove(x: number, y: number) {
         if (!this.isPressed) return;
 
         const dx = x - this.startX;
-        // const _dy = y - this.startY;
         const threshold = 30; // スワイプのしきい値
 
         if (Math.abs(dx) > threshold) {
@@ -61,6 +63,21 @@ export class Input {
             }
 
             this.isPressed = false; // 一度のスワイプで一回だけ入れ替え
+        } else {
+            // スワイプ閾値未満ならカーソル位置を更新（追従）
+            this.updateCursor(x, y);
+        }
+    }
+
+    private updateCursor(x: number, y: number) {
+        const pos = this.getGridPos(x, y);
+        if (pos.gridX >= 0 && pos.gridX < this.grid.width - 1 && pos.gridY >= 0 && pos.gridY < this.grid.height) {
+            this.grid.cursorX = pos.gridX;
+            this.grid.cursorY = pos.gridY;
+        } else if (pos.gridX === this.grid.width - 1) {
+            // 一番右をクリックした場合は左にずらす
+            this.grid.cursorX = pos.gridX - 1;
+            this.grid.cursorY = pos.gridY;
         }
     }
 

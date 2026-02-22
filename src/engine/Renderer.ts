@@ -1,5 +1,5 @@
 import { Grid } from './Grid';
-import { PanelType } from '../types/game';
+import { PanelType, PANEL_SYMBOLS } from '../types/game';
 
 /**
  * 画面への描画を担当するクラスです。
@@ -53,12 +53,18 @@ export class Renderer {
                 // 消滅中のエフェクト
                 let alpha = 1.0;
                 let scale = 1.0;
-                if (panel.status === 'matched') { // PanelStatus.MATCHED
-                    alpha = panel.matchTimer / 500; // 徐々に消える
-                    scale = 1.0 + (1.0 - (panel.matchTimer / 500)) * 0.2; // 少し膨らむ
+                let showFace = false;
+
+                if (panel.status === 'matched' || panel.status === 'match_waiting') {
+                    showFace = true;
+                    // 消滅アニメーションの設定（MATCHEDの時だけフェード）
+                    if (panel.status === 'matched') {
+                        alpha = panel.matchTimer / 500;
+                        scale = 1.0 + (1.0 - (panel.matchTimer / 500)) * 0.2;
+                    }
                 }
 
-                this.drawPanel(posX + panelW / 2, posY + panelH / 2, panelW * scale, panelH * scale, panel.type, alpha);
+                this.drawPanel(posX + panelW / 2, posY + panelH / 2, panelW * scale, panelH * scale, panel.type, alpha, showFace);
             }
         }
 
@@ -69,20 +75,44 @@ export class Renderer {
         this.drawUpcomingRow(panelW, panelH, riseOffset);
     }
 
-    private drawPanel(cx: number, cy: number, w: number, h: number, type: PanelType, alpha: number) {
+    private drawPanel(cx: number, cy: number, w: number, h: number, type: PanelType, alpha: number, showFace: boolean) {
         const ctx = this.ctx;
         const padding = 2;
 
         ctx.globalAlpha = Math.max(0, alpha);
+
+        // パネルの外枠
         ctx.fillStyle = this.colors[type];
         ctx.beginPath();
-        ctx.roundRect(cx - w / 2 + padding, cy - h / 2 + padding, w - padding * 2, h - padding * 2, 8);
+        const r = 8;
+        ctx.roundRect(cx - w / 2 + padding, cy - h / 2 + padding, w - padding * 2, h - padding * 2, r);
         ctx.fill();
+
+        // シンボルまたは顔を描画
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (showFace) {
+            // 消滅時の顔 (x x) みたいなの
+            ctx.font = `bold ${w * 0.5}px Arial`;
+            ctx.fillText('× ×', cx, cy - h * 0.05);
+            ctx.font = `bold ${w * 0.3}px Arial`;
+            ctx.fillText('︶', cx, cy + h * 0.2);
+        } else {
+            // 通常時の記号
+            const symbol = PANEL_SYMBOLS[type];
+            if (symbol) {
+                ctx.font = `bold ${w * 0.5}px Arial`;
+                ctx.fillText(symbol, cx, cy);
+            }
+        }
 
         // 輝き
         ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * alpha})`;
         ctx.lineWidth = 2;
         ctx.stroke();
+
         ctx.globalAlpha = 1.0;
     }
 
@@ -119,7 +149,7 @@ export class Renderer {
 
         for (let x = 0; x < this.grid.width; x++) {
             const type = this.grid.upcomingRow[x] || PanelType.RED;
-            this.drawPanel(x * panelW + panelW / 2, y + panelH / 2, panelW, panelH, type, 0.5);
+            this.drawPanel(x * panelW + panelW / 2, y + panelH / 2, panelW, panelH, type, 0.5, false);
         }
     }
 }

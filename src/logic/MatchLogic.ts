@@ -64,9 +64,20 @@ export class MatchLogic {
         }
 
         // マッチしたパネルの状態を更新
+        let delay = 0;
+        const STAGGER_DELAY = 150; // パネルごとの時間差
+        const TOTAL_WAIT = 500;    // 消去開始までの待機時間
+
         toMatch.forEach(pos => {
-            grid.panels[pos.y][pos.x].status = PanelStatus.MATCHED;
-            grid.panels[pos.y][pos.x].matchTimer = 500; // 500ms 消えるまでの時間
+            const panel = grid.panels[pos.y][pos.x];
+            // すでにマッチ判定されているものはスキップ
+            if (panel.status === PanelStatus.IDLE) {
+                panel.status = PanelStatus.MATCH_WAITING;
+                // matchTimer を管理用の汎用タイマーとして使用
+                // 最初は待機時間 + 各パネルのディレイ
+                panel.matchTimer = TOTAL_WAIT + delay;
+                delay += STAGGER_DELAY;
+            }
         });
 
         return hasMatch;

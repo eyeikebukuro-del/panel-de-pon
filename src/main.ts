@@ -65,11 +65,20 @@ class Game {
     for (let y = 0; y < this.grid.height; y++) {
       for (let x = 0; x < this.grid.width; x++) {
         const panel = this.grid.panels[y][x];
-        if (panel.status === PanelStatus.MATCHED) {
+
+        if (panel.status === PanelStatus.MATCH_WAITING || panel.status === PanelStatus.MATCHED) {
           panel.matchTimer -= deltaTime;
-          if (panel.matchTimer <= 0) {
+
+          // MATCH_WAITING から MATCHED (顔表示) への遷移
+          if (panel.status === PanelStatus.MATCH_WAITING && panel.matchTimer <= 500) {
+            panel.status = PanelStatus.MATCHED;
+          }
+
+          // MATCHED から EMPTY への遷移
+          if (panel.status === PanelStatus.MATCHED && panel.matchTimer <= 0) {
             panel.type = PanelType.EMPTY;
             panel.status = PanelStatus.IDLE;
+            panel.matchTimer = 0;
             this.score += 10;
             this.updateScoreUI();
           }

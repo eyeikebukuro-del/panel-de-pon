@@ -17,10 +17,23 @@ export enum PanelType {
 export enum PanelStatus {
   IDLE = 'idle',
   SWAPPING = 'swapping',
-  MATCHED = 'matched',
+  MATCHED = 'matched', // 消滅決定
+  MATCH_WAITING = 'match_waiting', // 消滅アニメーション待ち
   FALLING = 'falling',
   WAITING_FOR_FALL = 'waiting_for_fall',
 }
+
+/**
+ * パネルのシンボルを定義します。
+ */
+export const PANEL_SYMBOLS: Record<number, string> = {
+  1: '♡', // RED
+  2: '▽', // BLUE (User requested BLUE as ▽, CYAN as △. Assuming PanelType 2 is BLUE)
+  3: '〇', // GREEN
+  4: '★', // YELLOW
+  5: '♢', // PURPLE
+  6: '△', // CYAN
+};
 
 /**
  * 個別のパネルのインターフェースです。
