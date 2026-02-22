@@ -66,7 +66,7 @@ class Game {
       for (let x = 0; x < this.grid.width; x++) {
         const panel = this.grid.panels[y][x];
         const s = panel.status;
-        if (s === PanelStatus.MATCH_WAITING || s === PanelStatus.MATCHED || s === PanelStatus.FALLING) {
+        if (s === PanelStatus.MATCH_WAITING || s === PanelStatus.MATCHED || s === PanelStatus.FALLING || s === PanelStatus.SWAPPING) {
           stillSomethingHappening = true;
         }
 
@@ -81,11 +81,13 @@ class Game {
 
     if (!stillSomethingHappening) {
       // 全てが静止したら連鎖数をリセット
-      this.grid.currentCombo = 0;
-      // 全パネルの連鎖フラグをリセット
-      for (let y = 0; y < this.grid.height; y++) {
-        for (let x = 0; x < this.grid.width; x++) {
-          this.grid.panels[y][x].isChaining = false;
+      if (this.grid.currentCombo > 0) {
+        this.grid.currentCombo = 0;
+        // 全パネルの連鎖フラグをリセット
+        for (let y = 0; y < this.grid.height; y++) {
+          for (let x = 0; x < this.grid.width; x++) {
+            this.grid.panels[y][x].isChaining = false;
+          }
         }
       }
     }

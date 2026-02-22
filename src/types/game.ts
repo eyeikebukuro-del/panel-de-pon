@@ -67,6 +67,6 @@ export const GAME_CONFIG = {
   RISE_SPEED: 0.0005, // さらにゆっくり (0.001 -> 0.0005)
   MANUAL_RISE_SPEED: 0.05,
   MATCH_TIME: 800,
-  HIT_STOP_DURATION: 300, // ヒットストップの長さ（ms）
+  HIT_STOP_DURATION: 500, // ヒットストップを少し長く (300 -> 500)
   COMBO_GRACE_PERIOD: 1000, // 連鎖継続の猶予時間（ms）
 };

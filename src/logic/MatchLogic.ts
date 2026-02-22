@@ -73,7 +73,7 @@ export class MatchLogic {
 
         if (isChainMatch) {
             grid.currentCombo++;
-            // コンボ表示ポップアップを追加
+            // コンボ表示ポップアップを追加 (2連鎖以上)
             if (grid.currentCombo >= 2) {
                 const center = toMatch[Math.floor(toMatch.length / 2)];
                 grid.popups.push({
@@ -84,8 +84,8 @@ export class MatchLogic {
                 });
             }
         } else {
-            // 連鎖が切れたらリセット（ただし消滅中は何もしない）
-            // 実際のリセット判定は main.ts の更新ループで行うか
+            // 通常のマッチ
+            grid.currentCombo = 1;
         }
 
         // マッチしたパネルの状態を更新

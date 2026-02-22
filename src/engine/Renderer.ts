@@ -81,7 +81,7 @@ export class Renderer {
     private drawPopups(panelW: number, panelH: number, riseOffset: number) {
         const ctx = this.ctx;
         this.grid.popups.forEach(p => {
-            const px = p.x * panelW + panelW; // 2枚の中間あたり
+            const px = p.x * panelW + panelW / 2; // パネルの中央
             const py = p.y * panelH - riseOffset - (1.0 - p.timer / 1000) * 50; // 上に昇る
 
             ctx.save();
