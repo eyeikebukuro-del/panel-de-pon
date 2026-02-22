@@ -10,7 +10,11 @@ export class Grid {
     public height: number;
     public cursorX: number = 2;
     public cursorY: number = 8;
-    public riseProgress: number = 0; // 追加
+    public riseProgress: number = 0;
+    public hitStopTimer: number = 0; // ヒットストップ用
+    public isMatching: boolean = false; // 消滅中のパネルがあるか
+    public currentCombo: number = 0; // 現在の連鎖数
+    public popups: { x: number, y: number, text: string, timer: number }[] = []; // コンボ表示用
     public upcomingRow: PanelType[] = [];
 
     constructor(width: number = GAME_CONFIG.GRID_WIDTH, height: number = GAME_CONFIG.GRID_HEIGHT) {
@@ -23,6 +27,7 @@ export class Grid {
                 offsetY: 0,
                 offsetX: 0,
                 matchTimer: 0,
+                isChaining: false,
             }))
         );
         this.initRandom();

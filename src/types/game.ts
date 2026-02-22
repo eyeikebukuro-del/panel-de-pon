@@ -44,15 +44,15 @@ export interface Panel {
   offsetY: number; // せり上がりや落下中のオフセット（ピクセル）
   offsetX: number; // スワップ中のオフセット（ピクセル）
   matchTimer: number; // 消滅アニメーション用のタイマー
+  isChaining: boolean; // 連鎖フラグ
 }
 
 /**
- * 選択状態のインターフェースです。
+ * コンボ（連鎖）情報のインターフェースです。
  */
-export interface Selection {
-  x: number;
-  y: number;
-  active: boolean;
+export interface ComboInfo {
+  count: number;
+  timer: number;
 }
 
 /**
@@ -64,7 +64,9 @@ export const GAME_CONFIG = {
   PANEL_SIZE: 60,
   SWAP_SPEED: 0.2,
   FALL_SPEED: 0.5,
-  RISE_SPEED: 0.001, // 以前より大幅に遅く (0.005 -> 0.001)
-  MANUAL_RISE_SPEED: 0.05, // 手動せり上がり時の速度
-  MATCH_TIME: 800, // 消滅までの時間（少し短く）
+  RISE_SPEED: 0.001,
+  MANUAL_RISE_SPEED: 0.05,
+  MATCH_TIME: 800,
+  HIT_STOP_DURATION: 300, // ヒットストップの長さ（ms）
+  COMBO_GRACE_PERIOD: 1000, // 連鎖継続の猶予時間（ms）
 };

@@ -73,6 +73,30 @@ export class Renderer {
 
         // 次にせり上がってくる行の予兆（一番下）
         this.drawUpcomingRow(panelW, panelH, riseOffset);
+
+        // コンボポップアップの描画
+        this.drawPopups(panelW, panelH, riseOffset);
+    }
+
+    private drawPopups(panelW: number, panelH: number, riseOffset: number) {
+        const ctx = this.ctx;
+        this.grid.popups.forEach(p => {
+            const px = p.x * panelW + panelW; // 2枚の中間あたり
+            const py = p.y * panelH - riseOffset - (1.0 - p.timer / 1000) * 50; // 上に昇る
+
+            ctx.save();
+            ctx.globalAlpha = p.timer / 1000;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#ff0080';
+            ctx.lineWidth = 4;
+            ctx.font = 'bold 32px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeText(p.text, px, py);
+            ctx.fillText(p.text, px, py);
+            ctx.restore();
+        });
     }
 
     private drawPanel(cx: number, cy: number, w: number, h: number, type: PanelType, alpha: number, showFace: boolean) {

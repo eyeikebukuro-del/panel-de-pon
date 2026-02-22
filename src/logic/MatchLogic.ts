@@ -63,6 +63,31 @@ export class MatchLogic {
             }
         }
 
+        // 連鎖判定
+        let isChainMatch = false;
+        toMatch.forEach(pos => {
+            if (grid.panels[pos.y][pos.x].isChaining) {
+                isChainMatch = true;
+            }
+        });
+
+        if (isChainMatch) {
+            grid.currentCombo++;
+            // コンボ表示ポップアップを追加
+            if (grid.currentCombo >= 2) {
+                const center = toMatch[Math.floor(toMatch.length / 2)];
+                grid.popups.push({
+                    x: center.x,
+                    y: center.y,
+                    text: `${grid.currentCombo}連鎖!`,
+                    timer: 1000
+                });
+            }
+        } else {
+            // 連鎖が切れたらリセット（ただし消滅中は何もしない）
+            // 実際のリセット判定は main.ts の更新ループで行うか
+        }
+
         // マッチしたパネルの状態を更新
         let delay = 0;
         const STAGGER_DELAY = 150; // パネルごとの時間差
@@ -70,11 +95,8 @@ export class MatchLogic {
 
         toMatch.forEach(pos => {
             const panel = grid.panels[pos.y][pos.x];
-            // すでにマッチ判定されているものはスキップ
-            if (panel.status === PanelStatus.IDLE) {
+            if (panel.status === PanelStatus.IDLE || panel.status === PanelStatus.FALLING) {
                 panel.status = PanelStatus.MATCH_WAITING;
-                // matchTimer を管理用の汎用タイマーとして使用
-                // 最初は待機時間 + 各パネルのディレイ
                 panel.matchTimer = TOTAL_WAIT + delay;
                 delay += STAGGER_DELAY;
             }

@@ -13,9 +13,10 @@ export class GravityLogic {
 
                 if (panel.type !== PanelType.EMPTY && below.type === PanelType.EMPTY) {
                     // 下のパネルが空の場合のみ落下
-                    // ただし、もし下のパネルが消滅待ち/消滅中なら落下しない（Panel de Ponの挙動）
-                    if (panel.status === PanelStatus.IDLE) {
-                        // 落下開始（連鎖のために状態管理が必要になるが、まずはシンプルに）
+                    if (panel.status === PanelStatus.IDLE || panel.status === PanelStatus.FALLING) {
+                        panel.status = PanelStatus.FALLING;
+                        panel.isChaining = true; // 落下したパネルは連鎖候補
+
                         grid.panels[y + 1][x] = { ...panel };
                         grid.panels[y][x] = {
                             type: PanelType.EMPTY,
@@ -23,13 +24,21 @@ export class GravityLogic {
                             offsetY: 0,
                             offsetX: 0,
                             matchTimer: 0,
+                            isChaining: false,
                         };
+                    }
+                } else if (panel.status === PanelStatus.FALLING && below.type !== PanelType.EMPTY) {
+                    // 着地
+                    if (below.status === PanelStatus.IDLE) {
+                        panel.status = PanelStatus.IDLE;
                     }
                 }
 
-                // パネルが消滅待ち・消滅中の場合、その上のパネルは固定される
+                // パネルが消滅待ち・消滅中の場合、その上のパネルは固定されるが、連鎖フラグを継承させる
                 if (below.status === PanelStatus.MATCH_WAITING || below.status === PanelStatus.MATCHED) {
-                    // 何もしない（上のパネルを y 軸方向に固定）
+                    if (panel.type !== PanelType.EMPTY) {
+                        panel.isChaining = true; // 消滅中のパネルの上にあるパネルも連鎖の一部
+                    }
                 }
             }
         }

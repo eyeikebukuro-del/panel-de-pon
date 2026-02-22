@@ -48,16 +48,71 @@ class Game {
   }
 
   private update(deltaTime: number) {
+    // ヒットストップの処理
+    if (this.grid.hitStopTimer > 0) {
+      this.grid.hitStopTimer -= deltaTime;
+      // ヒットストップ中は描画のみ（更新スキップ）
+      return;
+    }
+
+    // 落下処理
     GravityLogic.update(this.grid);
-    MatchLogic.checkMatches(this.grid);
+
+    // マッチング判定
+    const foundMatch = MatchLogic.checkMatches(this.grid);
+    if (foundMatch) {
+      this.grid.hitStopTimer = GAME_CONFIG.HIT_STOP_DURATION;
+      this.grid.isMatching = true;
+    }
+
+    // 消滅中のパネルがあるか再チェック（タイマー更新)
     this.updateTimers(deltaTime);
 
-    const speed = this.isRisingManual ? GAME_CONFIG.MANUAL_RISE_SPEED : GAME_CONFIG.RISE_SPEED;
-    this.grid.riseProgress += speed;
+    // ポップアップの更新
+    this.grid.popups = this.grid.popups.filter(p => {
+      p.timer -= deltaTime;
+      return p.timer > 0;
+    });
 
-    if (this.grid.riseProgress >= 1) {
-      this.grid.riseProgress = 0;
-      this.shiftRowsUp();
+    // 全ての消滅が完了したか判定
+    let stillSomethingHappening = false;
+    for (let y = 0; y < this.grid.height; y++) {
+      for (let x = 0; x < this.grid.width; x++) {
+        const panel = this.grid.panels[y][x];
+        const s = panel.status;
+        if (s === PanelStatus.MATCH_WAITING || s === PanelStatus.MATCHED || s === PanelStatus.FALLING) {
+          stillSomethingHappening = true;
+        }
+
+        // 落ち着いたパネルの連鎖フラグをリセット（マッチしていなければ）
+        if (s === PanelStatus.IDLE && !stillSomethingHappening) {
+          // ここで一斉に消すと不具合が出るので、stillSomethingHappeningが完全にfalseの時だけやる
+        }
+      }
+    }
+
+    this.grid.isMatching = stillSomethingHappening;
+
+    if (!stillSomethingHappening) {
+      // 全てが静止したら連鎖数をリセット
+      this.grid.currentCombo = 0;
+      // 全パネルの連鎖フラグをリセット
+      for (let y = 0; y < this.grid.height; y++) {
+        for (let x = 0; x < this.grid.width; x++) {
+          this.grid.panels[y][x].isChaining = false;
+        }
+      }
+    }
+
+    // せり上がり（消滅・落下中は停止）
+    if (!stillSomethingHappening) {
+      const speed = this.isRisingManual ? GAME_CONFIG.MANUAL_RISE_SPEED : GAME_CONFIG.RISE_SPEED;
+      this.grid.riseProgress += speed;
+
+      if (this.grid.riseProgress >= 1) {
+        this.grid.riseProgress = 0;
+        this.shiftRowsUp();
+      }
     }
   }
 
@@ -104,6 +159,7 @@ class Game {
       offsetY: 0,
       offsetX: 0,
       matchTimer: 0,
+      isChaining: false,
     }));
     this.grid.generateUpcomingRow();
     if (this.grid.cursorY > 0) {
