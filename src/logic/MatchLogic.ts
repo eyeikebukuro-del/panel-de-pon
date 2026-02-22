@@ -71,6 +71,11 @@ export class MatchLogic {
             }
         });
 
+        // アクティブ連鎖: すでに消滅中のパネルがあるなら、新たに揃ったものも連鎖とする
+        if (grid.isMatching) {
+            isChainMatch = true;
+        }
+
         if (isChainMatch) {
             grid.currentCombo++;
             // コンボ表示ポップアップを追加 (2連鎖以上)

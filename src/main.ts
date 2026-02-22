@@ -10,7 +10,6 @@ class Game {
   private grid: Grid;
   private renderer: Renderer;
   private lastTime: number = 0;
-  private score: number = 0;
 
   constructor() {
     const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
@@ -37,19 +36,23 @@ class Game {
     // ヒットストップの処理
     if (this.grid.hitStopTimer > 0) {
       this.grid.hitStopTimer -= deltaTime;
-      // ヒットストップ中は描画のみ（更新スキップ）
-      return;
     }
+
+    // ゲームオーバー時は更新停止
+    if (this.grid.isGameOver) return;
 
     // 落下処理
     GravityLogic.update(this.grid);
 
-    // マッチング判定
+    // マッチング判定（ヒットストップ中でも受け付ける）
     const foundMatch = MatchLogic.checkMatches(this.grid);
     if (foundMatch) {
       this.grid.hitStopTimer = GAME_CONFIG.HIT_STOP_DURATION;
       this.grid.isMatching = true;
     }
+
+    // ヒットストップ中はこれ以降の更新（落下進行やせり上がり）をスキップ
+    if (this.grid.hitStopTimer > 0) return;
 
     // 消滅中のパネルがあるか再チェック（タイマー更新)
     this.updateTimers(deltaTime);
@@ -122,7 +125,11 @@ class Game {
             panel.type = PanelType.EMPTY;
             panel.status = PanelStatus.IDLE;
             panel.matchTimer = 0;
-            this.score += 10;
+
+            // スコア計算: 基本10点 + 連鎖ボーナス
+            const comboBonus = (this.grid.currentCombo > 1) ? (this.grid.currentCombo * 100) : 0;
+            this.grid.score += 10 + comboBonus;
+
             this.updateScoreUI();
           }
         }
@@ -133,11 +140,19 @@ class Game {
   private updateScoreUI() {
     const scoreEl = document.querySelector('#score');
     if (scoreEl) {
-      scoreEl.textContent = this.score.toString().padStart(5, '0');
+      scoreEl.textContent = this.grid.score.toString().padStart(5, '0');
     }
   }
 
   private shiftRowsUp() {
+    // ゲームオーバー判定: 最上段にパネルがある状態でせり上がろうとしたら負け
+    for (let x = 0; x < this.grid.width; x++) {
+      if (this.grid.panels[0][x].type !== PanelType.EMPTY) {
+        this.grid.isGameOver = true;
+        return;
+      }
+    }
+
     for (let y = 0; y < this.grid.height - 1; y++) {
       this.grid.panels[y] = this.grid.panels[y + 1];
     }

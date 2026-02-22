@@ -76,6 +76,14 @@ export class Renderer {
 
         // コンボポップアップの描画
         this.drawPopups(panelW, panelH, riseOffset);
+
+        // 警告ライン（一番上）
+        this.drawDangerLine(panelH);
+
+        // ゲームオーバー表示
+        if (this.grid.isGameOver) {
+            this.drawGameOver();
+        }
     }
 
     private drawPopups(panelW: number, panelH: number, riseOffset: number) {
@@ -175,5 +183,35 @@ export class Renderer {
             const type = this.grid.upcomingRow[x] || PanelType.RED;
             this.drawPanel(x * panelW + panelW / 2, y + panelH / 2, panelW, panelH, type, 0.5, false);
         }
+    }
+
+    private drawDangerLine(panelH: number) {
+        const ctx = this.ctx;
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([10, 5]);
+        ctx.beginPath();
+        ctx.moveTo(0, panelH);
+        ctx.lineTo(this.canvas.width, panelH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    private drawGameOver() {
+        const ctx = this.ctx;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
+
+        ctx.font = '24px Arial';
+        ctx.fillText('タップしてリロード', this.canvas.width / 2, this.canvas.height / 2 + 60);
+
+        // リロード用のクリックイベントを追加（一度だけ）
+        this.canvas.onclick = () => window.location.reload();
     }
 }

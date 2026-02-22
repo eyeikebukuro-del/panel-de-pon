@@ -15,6 +15,8 @@ export class Grid {
     public isMatching: boolean = false; // 消滅中のパネルがあるか
     public currentCombo: number = 0; // 現在の連鎖数
     public isManualRising: boolean = false; // 手動せり上がり中フラグ
+    public isGameOver: boolean = false; // ゲームオーバーフラグ
+    public score: number = 0; // スコア
     public popups: { x: number, y: number, text: string, timer: number }[] = []; // コンボ表示用
     public upcomingRow: PanelType[] = [];
 
