@@ -9,7 +9,6 @@ import { GravityLogic } from './logic/GravityLogic';
 class Game {
   private grid: Grid;
   private renderer: Renderer;
-  private isRisingManual: boolean = false;
   private lastTime: number = 0;
   private score: number = 0;
 
@@ -19,22 +18,9 @@ class Game {
     this.renderer = new Renderer(canvas, this.grid);
     new Input(canvas, this.grid);
 
-    this.initUI();
     requestAnimationFrame((time) => this.loop(time));
   }
 
-  private initUI() {
-    const riseBtn = document.querySelector('#rise-button');
-    if (riseBtn) {
-      riseBtn.addEventListener('mousedown', () => this.isRisingManual = true);
-      riseBtn.addEventListener('mouseup', () => this.isRisingManual = false);
-      riseBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        this.isRisingManual = true;
-      });
-      riseBtn.addEventListener('touchend', () => this.isRisingManual = false);
-    }
-  }
 
   private loop(time: number) {
     if (!this.lastTime) this.lastTime = time;
@@ -106,7 +92,7 @@ class Game {
 
     // せり上がり（消滅・落下中は停止）
     if (!stillSomethingHappening) {
-      const speed = this.isRisingManual ? GAME_CONFIG.MANUAL_RISE_SPEED : GAME_CONFIG.RISE_SPEED;
+      const speed = this.grid.isManualRising ? GAME_CONFIG.MANUAL_RISE_SPEED : GAME_CONFIG.RISE_SPEED;
       this.grid.riseProgress += speed;
 
       if (this.grid.riseProgress >= 1) {

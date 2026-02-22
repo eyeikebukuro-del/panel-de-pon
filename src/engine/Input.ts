@@ -52,9 +52,11 @@ export class Input {
         if (!this.isPressed) return;
 
         const dx = x - this.startX;
+        const dy = y - this.startY;
         const threshold = 30; // スワイプのしきい値
 
         if (Math.abs(dx) > threshold) {
+            // 水平スワイプ（パネル入れ替え）
             const pos = this.getGridPos(this.startX, this.startY);
             const targetX = dx > 0 ? pos.gridX + 1 : pos.gridX - 1;
 
@@ -62,7 +64,10 @@ export class Input {
                 this.grid.swap(pos.gridY, pos.gridX, targetX);
             }
 
-            this.isPressed = false; // 一度のスワイプで一回だけ入れ替え
+            this.isPressed = false;
+        } else if (dy < -threshold) {
+            // 上方向へのスワイプ（手動せり上げ）
+            this.grid.isManualRising = true;
         } else {
             // スワイプ閾値未満ならカーソル位置を更新（追従）
             this.updateCursor(x, y);
@@ -83,5 +88,6 @@ export class Input {
 
     private handleEnd() {
         this.isPressed = false;
+        this.grid.isManualRising = false; // 手動せり上げを停止
     }
 }

@@ -64,7 +64,7 @@ export const GAME_CONFIG = {
   PANEL_SIZE: 60,
   SWAP_SPEED: 0.2,
   FALL_SPEED: 0.5,
-  RISE_SPEED: 0.001,
+  RISE_SPEED: 0.0005, // さらにゆっくり (0.001 -> 0.0005)
   MANUAL_RISE_SPEED: 0.05,
   MATCH_TIME: 800,
   HIT_STOP_DURATION: 300, // ヒットストップの長さ（ms）

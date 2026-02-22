@@ -14,6 +14,7 @@ export class Grid {
     public hitStopTimer: number = 0; // ヒットストップ用
     public isMatching: boolean = false; // 消滅中のパネルがあるか
     public currentCombo: number = 0; // 現在の連鎖数
+    public isManualRising: boolean = false; // 手動せり上がり中フラグ
     public popups: { x: number, y: number, text: string, timer: number }[] = []; // コンボ表示用
     public upcomingRow: PanelType[] = [];
 
