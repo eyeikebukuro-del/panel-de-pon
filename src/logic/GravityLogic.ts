@@ -28,10 +28,8 @@ export class GravityLogic {
                         };
                     }
                 } else if (panel.status === PanelStatus.FALLING && below.type !== PanelType.EMPTY) {
-                    // 着地
-                    if (below.status === PanelStatus.IDLE) {
-                        panel.status = PanelStatus.IDLE;
-                    }
+                    // 着地（下のパネルが空でなければ何であれ止まる）
+                    panel.status = PanelStatus.IDLE;
                 }
 
                 // パネルが消滅待ち・消滅中の場合、その上のパネルは固定されるが、連鎖フラグを継承させる

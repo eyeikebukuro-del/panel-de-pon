@@ -21,9 +21,9 @@ export class MatchLogic {
                 if (
                     grid.panels[y][x + 1].type === type &&
                     grid.panels[y][x + 2].type === type &&
-                    grid.panels[y][x].status === PanelStatus.IDLE &&
-                    grid.panels[y][x + 1].status === PanelStatus.IDLE &&
-                    grid.panels[y][x + 2].status === PanelStatus.IDLE
+                    (grid.panels[y][x].status === PanelStatus.IDLE || grid.panels[y][x].status === PanelStatus.FALLING) &&
+                    (grid.panels[y][x + 1].status === PanelStatus.IDLE || grid.panels[y][x + 1].status === PanelStatus.FALLING) &&
+                    (grid.panels[y][x + 2].status === PanelStatus.IDLE || grid.panels[y][x + 2].status === PanelStatus.FALLING)
                 ) {
                     toMatch.push({ y, x }, { y, x: x + 1 }, { y, x: x + 2 });
                     hasMatch = true;
@@ -31,7 +31,10 @@ export class MatchLogic {
                     // さらに隣も同じなら追加
                     let nextX = x + 3;
                     while (nextX < grid.width && grid.panels[y][nextX].type === type) {
-                        toMatch.push({ y, x: nextX });
+                        const s = grid.panels[y][nextX].status;
+                        if (s === PanelStatus.IDLE || s === PanelStatus.FALLING) {
+                            toMatch.push({ y, x: nextX });
+                        }
                         nextX++;
                     }
                 }
@@ -47,16 +50,19 @@ export class MatchLogic {
                 if (
                     grid.panels[y + 1][x].type === type &&
                     grid.panels[y + 2][x].type === type &&
-                    grid.panels[y][x].status === PanelStatus.IDLE &&
-                    grid.panels[y + 1][x].status === PanelStatus.IDLE &&
-                    grid.panels[y + 2][x].status === PanelStatus.IDLE
+                    (grid.panels[y][x].status === PanelStatus.IDLE || grid.panels[y][x].status === PanelStatus.FALLING) &&
+                    (grid.panels[y + 1][x].status === PanelStatus.IDLE || grid.panels[y + 1][x].status === PanelStatus.FALLING) &&
+                    (grid.panels[y + 2][x].status === PanelStatus.IDLE || grid.panels[y + 2][x].status === PanelStatus.FALLING)
                 ) {
                     toMatch.push({ y, x }, { y: y + 1, x }, { y: y + 2, x });
                     hasMatch = true;
 
                     let nextY = y + 3;
                     while (nextY < grid.height && grid.panels[nextY][x].type === type) {
-                        toMatch.push({ y: nextY, x });
+                        const s = grid.panels[nextY][x].status;
+                        if (s === PanelStatus.IDLE || s === PanelStatus.FALLING) {
+                            toMatch.push({ y: nextY, x });
+                        }
                         nextY++;
                     }
                 }
