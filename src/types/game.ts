@@ -34,14 +34,24 @@ export interface Panel {
 }
 
 /**
+ * 選択状態のインターフェースです。
+ */
+export interface Selection {
+  x: number;
+  y: number;
+  active: boolean;
+}
+
+/**
  * ゲームの設定定数です。
  */
 export const GAME_CONFIG = {
   GRID_WIDTH: 6,
   GRID_HEIGHT: 12,
-  PANEL_SIZE: 60, // 基本サイズ（レスポンシブで調整）
-  SWAP_SPEED: 0.2, // スワップ速度
-  FALL_SPEED: 0.5, // 落下速度
-  RISE_SPEED: 0.005, // せり上がり速度（1フレームあたりのグリッド単位）
-  MATCH_TIME: 1000, // 消滅までの時間（ms）
+  PANEL_SIZE: 60,
+  SWAP_SPEED: 0.2,
+  FALL_SPEED: 0.5,
+  RISE_SPEED: 0.001, // 以前より大幅に遅く (0.005 -> 0.001)
+  MANUAL_RISE_SPEED: 0.05, // 手動せり上がり時の速度
+  MATCH_TIME: 800, // 消滅までの時間（少し短く）
 };

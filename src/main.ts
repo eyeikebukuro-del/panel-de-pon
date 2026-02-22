@@ -9,6 +9,7 @@ import { GravityLogic } from './logic/GravityLogic';
 class Game {
   private grid: Grid;
   private renderer: Renderer;
+  private isRisingManual: boolean = false;
   private lastTime: number = 0;
   private score: number = 0;
 
@@ -18,10 +19,25 @@ class Game {
     this.renderer = new Renderer(canvas, this.grid);
     new Input(canvas, this.grid);
 
+    this.initUI();
     requestAnimationFrame((time) => this.loop(time));
   }
 
+  private initUI() {
+    const riseBtn = document.querySelector('#rise-button');
+    if (riseBtn) {
+      riseBtn.addEventListener('mousedown', () => this.isRisingManual = true);
+      riseBtn.addEventListener('mouseup', () => this.isRisingManual = false);
+      riseBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.isRisingManual = true;
+      });
+      riseBtn.addEventListener('touchend', () => this.isRisingManual = false);
+    }
+  }
+
   private loop(time: number) {
+    if (!this.lastTime) this.lastTime = time;
     const deltaTime = time - this.lastTime;
     this.lastTime = time;
 
@@ -32,17 +48,13 @@ class Game {
   }
 
   private update(deltaTime: number) {
-    // 落下処理
     GravityLogic.update(this.grid);
-
-    // マッチング判定
     MatchLogic.checkMatches(this.grid);
-
-    // アニメーションタイマーの更新
     this.updateTimers(deltaTime);
 
-    // せり上がり
-    this.grid.riseProgress += GAME_CONFIG.RISE_SPEED;
+    const speed = this.isRisingManual ? GAME_CONFIG.MANUAL_RISE_SPEED : GAME_CONFIG.RISE_SPEED;
+    this.grid.riseProgress += speed;
+
     if (this.grid.riseProgress >= 1) {
       this.grid.riseProgress = 0;
       this.shiftRowsUp();
@@ -74,18 +86,20 @@ class Game {
   }
 
   private shiftRowsUp() {
-    // 全ての行を1つ上にずらす
     for (let y = 0; y < this.grid.height - 1; y++) {
       this.grid.panels[y] = this.grid.panels[y + 1];
     }
-    // 新しい行を一番下に追加（簡易実装）
-    this.grid.panels[this.grid.height - 1] = Array.from({ length: this.grid.width }, () => ({
-      type: Math.floor(Math.random() * 5) + 1,
-      status: 'idle' as any,
+    this.grid.panels[this.grid.height - 1] = this.grid.upcomingRow.map(type => ({
+      type,
+      status: PanelStatus.IDLE,
       offsetY: 0,
       offsetX: 0,
       matchTimer: 0,
     }));
+    this.grid.generateUpcomingRow();
+    if (this.grid.cursorY > 0) {
+      this.grid.cursorY--;
+    }
   }
 }
 

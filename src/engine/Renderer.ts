@@ -40,6 +40,7 @@ export class Renderer {
 
         const panelW = this.canvas.width / this.grid.width;
         const panelH = this.canvas.height / this.grid.height;
+        const riseOffset = this.grid.riseProgress * panelH;
 
         for (let y = 0; y < this.grid.height; y++) {
             for (let x = 0; x < this.grid.width; x++) {
@@ -47,32 +48,78 @@ export class Renderer {
                 if (panel.type === PanelType.EMPTY) continue;
 
                 const posX = x * panelW;
-                const posY = y * panelH - (this.grid.riseProgress * panelH);
+                const posY = y * panelH - riseOffset;
 
-                this.drawPanel(posX, posY, panelW, panelH, panel.type);
+                // 消滅中のエフェクト
+                let alpha = 1.0;
+                let scale = 1.0;
+                if (panel.status === 'matched') { // PanelStatus.MATCHED
+                    alpha = panel.matchTimer / 500; // 徐々に消える
+                    scale = 1.0 + (1.0 - (panel.matchTimer / 500)) * 0.2; // 少し膨らむ
+                }
+
+                this.drawPanel(posX + panelW / 2, posY + panelH / 2, panelW * scale, panelH * scale, panel.type, alpha);
             }
         }
 
+        // 選択枠（カッコ）の描画
+        this.drawSelection(this.grid.cursorX * panelW, this.grid.cursorY * panelH - riseOffset, panelW * 2, panelH);
+
         // 次にせり上がってくる行の予兆（一番下）
-        this.drawUpcomingRow(panelW, panelH);
+        this.drawUpcomingRow(panelW, panelH, riseOffset);
     }
 
-    private drawPanel(x: number, y: number, w: number, h: number, type: PanelType) {
+    private drawPanel(cx: number, cy: number, w: number, h: number, type: PanelType, alpha: number) {
         const ctx = this.ctx;
         const padding = 2;
 
+        ctx.globalAlpha = Math.max(0, alpha);
         ctx.fillStyle = this.colors[type];
         ctx.beginPath();
-        ctx.roundRect(x + padding, y + padding, w - padding * 2, h - padding * 2, 8);
+        ctx.roundRect(cx - w / 2 + padding, cy - h / 2 + padding, w - padding * 2, h - padding * 2, 8);
         ctx.fill();
 
-        // 微かな輝きを追加
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        // 輝き
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * alpha})`;
         ctx.lineWidth = 2;
         ctx.stroke();
+        ctx.globalAlpha = 1.0;
     }
 
-    private drawUpcomingRow(_panelW: number, _panelH: number) {
-        // 実際の実装では次の行を保持して描画する
+    private drawSelection(x: number, y: number, w: number, h: number) {
+        const ctx = this.ctx;
+        const p = 4; // padding
+        const len = 15; // 線の長さ
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([5, 5]); // 破線
+
+        // カッコの描画（左）
+        ctx.beginPath();
+        ctx.moveTo(x + p + len, y + p);
+        ctx.lineTo(x + p, y + p);
+        ctx.lineTo(x + p, y + h - p);
+        ctx.lineTo(x + p + len, y + h - p);
+        ctx.stroke();
+
+        // カッコの描画（右）
+        ctx.beginPath();
+        ctx.moveTo(x + w - p - len, y + p);
+        ctx.lineTo(x + w - p, y + p);
+        ctx.lineTo(x + w - p, y + h - p);
+        ctx.lineTo(x + w - p - len, y + h - p);
+        ctx.stroke();
+
+        ctx.setLineDash([]); // リセット
+    }
+
+    private drawUpcomingRow(panelW: number, panelH: number, riseOffset: number) {
+        const y = this.canvas.height - riseOffset;
+
+        for (let x = 0; x < this.grid.width; x++) {
+            const type = this.grid.upcomingRow[x] || PanelType.RED;
+            this.drawPanel(x * panelW + panelW / 2, y + panelH / 2, panelW, panelH, type, 0.5);
+        }
     }
 }
