@@ -1,0 +1,6 @@
+
+> panel-de-pon@0.0.0 build
+> tsc && vite build
+
+src/types/game.ts(4,13): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/types/game.ts(17,13): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
