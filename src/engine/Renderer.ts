@@ -18,20 +18,93 @@ export class Renderer {
         [PanelType.CYAN]: '#2bfff0',
     };
 
+    private panelImages: Partial<Record<PanelType, HTMLCanvasElement>> = {};
+    private vanishImages: Partial<Record<PanelType, HTMLCanvasElement>> = {};
+    private imagesLoaded: boolean = false;
+
     constructor(canvas: HTMLCanvasElement, grid: Grid) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
         this.grid = grid;
         this.resize();
         window.addEventListener('resize', () => this.resize());
+        this.loadImages();
+    }
+
+    private async loadImages() {
+        const loadImg = (src: string) => {
+            return new Promise<HTMLImageElement>((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        };
+
+        const removeWhiteBackground = (img: HTMLImageElement): HTMLCanvasElement => {
+            const d = document.createElement('canvas');
+            d.width = img.width;
+            d.height = img.height;
+            const c = d.getContext('2d')!;
+            c.drawImage(img, 0, 0);
+            const imgData = c.getImageData(0, 0, d.width, d.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                // If very close to white, make transparent
+                if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) {
+                    data[i + 3] = 0;
+                }
+            }
+            c.putImageData(imgData, 0, 0);
+            return d;
+        };
+
+        try {
+            const [
+                red, blue, green, yellow, purple, cyan,
+                redV, blueV, greenV, yellowV, purpleV, cyanV
+            ] = await Promise.all([
+                loadImg('/assets/panels/panel_red_idle.png'),
+                loadImg('/assets/panels/panel_blue_idle.png'),
+                loadImg('/assets/panels/panel_green_idle.png'),
+                loadImg('/assets/panels/panel_yellow_idle.png'),
+                loadImg('/assets/panels/panel_purple_idle.png'),
+                loadImg('/assets/panels/panel_cyan_idle.png'),
+                loadImg('/assets/panels/panel_red_vanish.png'),
+                loadImg('/assets/panels/panel_blue_vanish.png'),
+                loadImg('/assets/panels/panel_green_vanish.png'),
+                loadImg('/assets/panels/panel_yellow_vanish.png'),
+                loadImg('/assets/panels/panel_purple_vanish.png'),
+                loadImg('/assets/panels/panel_cyan_vanish.png')
+            ]);
+
+            this.panelImages[PanelType.RED] = removeWhiteBackground(red);
+            this.panelImages[PanelType.BLUE] = removeWhiteBackground(blue);
+            this.panelImages[PanelType.GREEN] = removeWhiteBackground(green);
+            this.panelImages[PanelType.YELLOW] = removeWhiteBackground(yellow);
+            this.panelImages[PanelType.PURPLE] = removeWhiteBackground(purple);
+            this.panelImages[PanelType.CYAN] = removeWhiteBackground(cyan);
+
+            this.vanishImages[PanelType.RED] = removeWhiteBackground(redV);
+            this.vanishImages[PanelType.BLUE] = removeWhiteBackground(blueV);
+            this.vanishImages[PanelType.GREEN] = removeWhiteBackground(greenV);
+            this.vanishImages[PanelType.YELLOW] = removeWhiteBackground(yellowV);
+            this.vanishImages[PanelType.PURPLE] = removeWhiteBackground(purpleV);
+            this.vanishImages[PanelType.CYAN] = removeWhiteBackground(cyanV);
+
+            this.imagesLoaded = true;
+        } catch (e) {
+            console.error('Failed to load panel images', e);
+        }
     }
 
     private resize() {
         const parent = this.canvas.parentElement;
         if (parent) {
-            const size = Math.min(parent.clientWidth / this.grid.width, parent.clientHeight / this.grid.height);
+            const displayHeight = this.grid.height - 1; // 見えるのは12行分
+            const size = Math.min(parent.clientWidth / this.grid.width, parent.clientHeight / displayHeight);
             this.canvas.width = this.grid.width * size;
-            this.canvas.height = this.grid.height * size;
+            this.canvas.height = displayHeight * size;
         }
     }
 
@@ -39,16 +112,20 @@ export class Renderer {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         const panelW = this.canvas.width / this.grid.width;
-        const panelH = this.canvas.height / this.grid.height;
+        // 表示用のマスの高さ
+        const panelH = this.canvas.height / (this.grid.height - 1);
         const riseOffset = this.grid.riseProgress * panelH;
 
-        for (let y = 0; y < this.grid.height; y++) {
+        // y=0 は画面外のゲームオーバー判定用領域なので描画から除外
+        for (let y = 1; y < this.grid.height; y++) {
             for (let x = 0; x < this.grid.width; x++) {
                 const panel = this.grid.panels[y][x];
                 if (panel.type === PanelType.EMPTY) continue;
 
-                const posX = x * panelW;
-                const posY = y * panelH - riseOffset;
+                // スワップ時のoffsetXと、落下時のoffsetY
+                const posX = (x + panel.offsetX) * panelW;
+                // y=1をキャンバスのy=0として描画する
+                const posY = ((y - 1) + panel.offsetY) * panelH - riseOffset;
 
                 // 消滅中のエフェクト
                 let alpha = 1.0;
@@ -69,7 +146,8 @@ export class Renderer {
         }
 
         // 選択枠（カッコ）の描画
-        this.drawSelection(this.grid.cursorX * panelW, this.grid.cursorY * panelH - riseOffset, panelW * 2, panelH);
+        // カーソルのy座標も1ずらす
+        this.drawSelection(this.grid.cursorX * panelW, (this.grid.cursorY - 1) * panelH - riseOffset, panelW * 2, panelH);
 
         // 次にせり上がってくる行の予兆（一番下）
         this.drawUpcomingRow(panelW, panelH, riseOffset);
@@ -78,7 +156,7 @@ export class Renderer {
         this.drawPopups(panelW, panelH, riseOffset);
 
         // 警告ライン（一番上）
-        this.drawDangerLine(panelH);
+        this.drawDangerLine();
 
         // ゲームオーバー表示
         if (this.grid.isGameOver) {
@@ -89,8 +167,8 @@ export class Renderer {
     private drawPopups(panelW: number, panelH: number, riseOffset: number) {
         const ctx = this.ctx;
         this.grid.popups.forEach(p => {
-            const px = p.x * panelW + panelW / 2; // パネルの中央
-            const py = p.y * panelH - riseOffset - (1.0 - p.timer / 1000) * 50; // 上に昇る
+            const px = p.x * panelW + panelW / 2;
+            const py = (p.y - 1) * panelH - riseOffset - (1.0 - p.timer / 1000) * 50;
 
             ctx.save();
             ctx.globalAlpha = p.timer / 1000;
@@ -113,37 +191,47 @@ export class Renderer {
 
         ctx.globalAlpha = Math.max(0, alpha);
 
-        // パネルの外枠
-        ctx.fillStyle = this.colors[type];
-        ctx.beginPath();
-        const r = 8;
-        ctx.roundRect(cx - w / 2 + padding, cy - h / 2 + padding, w - padding * 2, h - padding * 2, r);
-        ctx.fill();
+        if (this.imagesLoaded && this.panelImages[type]) {
+            const img = (showFace && this.vanishImages[type]) ? this.vanishImages[type]! : this.panelImages[type]!;
+            const drawW = w - padding * 2;
+            const drawH = h - padding * 2;
+            const drawX = cx - drawW / 2;
+            const drawY = cy - drawH / 2;
 
-        // シンボルまたは顔を描画
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        if (showFace) {
-            // 消滅時の顔 (x x) みたいなの
-            ctx.font = `bold ${w * 0.5}px Arial`;
-            ctx.fillText('× ×', cx, cy - h * 0.05);
-            ctx.font = `bold ${w * 0.3}px Arial`;
-            ctx.fillText('︶', cx, cy + h * 0.2);
+            ctx.drawImage(img, drawX, drawY, drawW, drawH);
         } else {
-            // 通常時の記号
-            const symbol = PANEL_SYMBOLS[type];
-            if (symbol) {
-                ctx.font = `bold ${w * 0.5}px Arial`;
-                ctx.fillText(symbol, cx, cy);
-            }
-        }
+            // パネルの外枠（フォールバック）
+            ctx.fillStyle = this.colors[type];
+            ctx.beginPath();
+            const r = 8;
+            ctx.roundRect(cx - w / 2 + padding, cy - h / 2 + padding, w - padding * 2, h - padding * 2, r);
+            ctx.fill();
 
-        // 輝き
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * alpha})`;
-        ctx.lineWidth = 2;
-        ctx.stroke();
+            // シンボルまたは顔を描画
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            if (showFace) {
+                // 消滅時の顔 (x x) みたいなの
+                ctx.font = `bold ${w * 0.5}px Arial`;
+                ctx.fillText('× ×', cx, cy - h * 0.05);
+                ctx.font = `bold ${w * 0.3}px Arial`;
+                ctx.fillText('︶', cx, cy + h * 0.2);
+            } else {
+                // 通常時の記号
+                const symbol = PANEL_SYMBOLS[type];
+                if (symbol) {
+                    ctx.font = `bold ${w * 0.5}px Arial`;
+                    ctx.fillText(symbol, cx, cy);
+                }
+            }
+
+            // 輝き
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * alpha})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
 
         ctx.globalAlpha = 1.0;
     }
@@ -185,14 +273,16 @@ export class Renderer {
         }
     }
 
-    private drawDangerLine(panelH: number) {
+    private drawDangerLine() {
         const ctx = this.ctx;
         ctx.strokeStyle = '#ff0000';
         ctx.lineWidth = 4;
         ctx.setLineDash([10, 5]);
         ctx.beginPath();
-        ctx.moveTo(0, panelH);
-        ctx.lineTo(this.canvas.width, panelH);
+        // 破線をキャンバスの一番上（枠の天井）に引く
+        const dangerY = 2; // 線が見えるように少しだけ下に
+        ctx.moveTo(0, dangerY);
+        ctx.lineTo(this.canvas.width, dangerY);
         ctx.stroke();
         ctx.setLineDash([]);
     }
