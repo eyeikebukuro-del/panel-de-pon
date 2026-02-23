@@ -19,7 +19,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 100dvh;
+  /* iOSなどのアドレスバーを考慮した高さ */
   overflow: hidden;
 }
 
@@ -36,6 +37,8 @@ body {
   display: flex;
   flex-direction: column;
   padding: 1rem;
+  padding-bottom: max(3rem, calc(env(safe-area-inset-bottom) + 3rem));
+  /* iPhoneの画面下のバーの余裕を持たせる（さらに広く） */
   background: radial-gradient(circle at top, #1e293b, #0f172a);
 }
 

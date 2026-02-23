@@ -43,39 +43,65 @@ export class Renderer {
 
         const removeWhiteBackground = (img: HTMLImageElement): HTMLCanvasElement => {
             const d = document.createElement('canvas');
-            d.width = img.width;
-            d.height = img.height;
-            const c = d.getContext('2d')!;
+            const w = d.width = img.width;
+            const h = d.height = img.height;
+            const c = d.getContext('2d', { willReadFrequently: true })!;
             c.drawImage(img, 0, 0);
-            const imgData = c.getImageData(0, 0, d.width, d.height);
+            const imgData = c.getImageData(0, 0, w, h);
             const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                // If very close to white, make transparent
-                if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) {
-                    data[i + 3] = 0;
+
+            const visited = new Uint8Array(w * h);
+            const queue = new Int32Array(w * h * 2);
+            let head = 0, tail = 0;
+
+            const push = (x: number, y: number) => {
+                if (x < 0 || y < 0 || x >= w || y >= h) return;
+                const idx = y * w + x;
+                if (visited[idx]) return;
+                visited[idx] = 1;
+
+                const p = idx * 4;
+                const r = data[p], g = data[p + 1], b = data[p + 2];
+                // 200以上の明るいピクセルは背景とみなして消波
+                if (r > 200 && g > 200 && b > 200) {
+                    const diff = Math.max(255 - r, 255 - g, 255 - b);
+                    data[p + 3] = Math.min(255, Math.max(0, diff * 5)); // エッジを少し柔らかく
+                    queue[tail++] = x;
+                    queue[tail++] = y;
                 }
+            };
+
+            // 四隅から開始して背景を塗りつぶし
+            push(0, 0); push(w - 1, 0); push(0, h - 1); push(w - 1, h - 1);
+
+            while (head < tail) {
+                const x = queue[head++];
+                const y = queue[head++];
+                push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
             }
+
             c.putImageData(imgData, 0, 0);
             return d;
         };
 
         try {
+            const baseUrl = import.meta.env.BASE_URL;
             const [
                 red, blue, green, yellow, purple, cyan,
                 redV, blueV, greenV, yellowV, purpleV, cyanV
             ] = await Promise.all([
-                loadImg('/assets/panels/panel_red_idle.png'),
-                loadImg('/assets/panels/panel_blue_idle.png'),
-                loadImg('/assets/panels/panel_green_idle.png'),
-                loadImg('/assets/panels/panel_yellow_idle.png'),
-                loadImg('/assets/panels/panel_purple_idle.png'),
-                loadImg('/assets/panels/panel_cyan_idle.png'),
-                loadImg('/assets/panels/panel_red_vanish.png'),
-                loadImg('/assets/panels/panel_blue_vanish.png'),
-                loadImg('/assets/panels/panel_green_vanish.png'),
-                loadImg('/assets/panels/panel_yellow_vanish.png'),
-                loadImg('/assets/panels/panel_purple_vanish.png'),
-                loadImg('/assets/panels/panel_cyan_vanish.png')
+                loadImg(baseUrl + 'assets/panels/panel_red_idle.png'),
+                loadImg(baseUrl + 'assets/panels/panel_blue_idle.png'),
+                loadImg(baseUrl + 'assets/panels/panel_green_idle.png'),
+                loadImg(baseUrl + 'assets/panels/panel_yellow_idle.png'),
+                loadImg(baseUrl + 'assets/panels/panel_purple_idle.png'),
+                loadImg(baseUrl + 'assets/panels/panel_cyan_idle.png'),
+                loadImg(baseUrl + 'assets/panels/panel_red_vanish.png'),
+                loadImg(baseUrl + 'assets/panels/panel_blue_vanish.png'),
+                loadImg(baseUrl + 'assets/panels/panel_green_vanish.png'),
+                loadImg(baseUrl + 'assets/panels/panel_yellow_vanish.png'),
+                loadImg(baseUrl + 'assets/panels/panel_purple_vanish.png'),
+                loadImg(baseUrl + 'assets/panels/panel_cyan_vanish.png')
             ]);
 
             this.panelImages[PanelType.RED] = removeWhiteBackground(red);
